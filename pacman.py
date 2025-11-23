@@ -1,6 +1,7 @@
-import sys
 import math
 import random
+import sys
+
 import pygame
 from pygame import Rect
 
@@ -79,7 +80,7 @@ OFFSET_Y = (SCREEN_HEIGHT - MAZE_HEIGHT) // 2
 
 # Gameplay settings
 PACMAN_SPEED = 100  # pixels per second
-GHOST_SPEED = 90    # normal ghost speed
+GHOST_SPEED = 90  # normal ghost speed
 VULNERABLE_SPEED = 70
 POWER_DURATION = 7.0  # seconds
 START_LIVES = 3
@@ -89,22 +90,27 @@ GHOST_SCORE = 200
 
 
 def grid_to_world(col, row):
-    return OFFSET_X + col * TILE_SIZE + TILE_SIZE // 2, OFFSET_Y + row * TILE_SIZE + TILE_SIZE // 2
+    return (
+        OFFSET_X + col * TILE_SIZE + TILE_SIZE // 2,
+        OFFSET_Y + row * TILE_SIZE + TILE_SIZE // 2,
+    )
 
 
 def rect_for_cell(col, row):
-    return Rect(OFFSET_X + col * TILE_SIZE, OFFSET_Y + row * TILE_SIZE, TILE_SIZE, TILE_SIZE)
+    return Rect(
+        OFFSET_X + col * TILE_SIZE, OFFSET_Y + row * TILE_SIZE, TILE_SIZE, TILE_SIZE
+    )
 
 
 def is_wall(col, row):
     if 0 <= row < ROWS and 0 <= col < COLS:
-        return MAZE_LAYOUT[row][col] == '1' or MAZE_LAYOUT[row][col] == 'H'
+        return MAZE_LAYOUT[row][col] == "1" or MAZE_LAYOUT[row][col] == "H"
     return True
 
 
 def is_door(col, row):
     if 0 <= row < ROWS and 0 <= col < COLS:
-        return MAZE_LAYOUT[row][col] == 'H'
+        return MAZE_LAYOUT[row][col] == "H"
     return False
 
 
@@ -133,10 +139,18 @@ class Entity:
 
     @property
     def rect(self):
-        return Rect(int(self.x - self.radius), int(self.y - self.radius), self.radius * 2, self.radius * 2)
+        return Rect(
+            int(self.x - self.radius),
+            int(self.y - self.radius),
+            self.radius * 2,
+            self.radius * 2,
+        )
 
     def grid_pos(self):
-        return (int((self.x - OFFSET_X) // TILE_SIZE), int((self.y - OFFSET_Y) // TILE_SIZE))
+        return (
+            int((self.x - OFFSET_X) // TILE_SIZE),
+            int((self.y - OFFSET_Y) // TILE_SIZE),
+        )
 
     def center_in_cell(self):
         self.x, self.y = grid_to_world(self.col, self.row)
@@ -182,39 +196,40 @@ class Pacman(Entity):
 
     def draw(self, surface):
         # Simple pacman circle. Optionally animate mouth by direction
-        pygame.draw.circle(surface, self.color, (int(self.x), int(self.y)), self.radius)
+        pygame.draw.circle(surface, self.color,
+                           (int(self.x), int(self.y)), self.radius)
 
 
 class Ghost(Entity):
-    MODES = ('normal', 'vulnerable', 'eyes')
+    MODES = ("normal", "vulnerable", "eyes")
 
-    def __init__(self, col, row, color, home_col, home_row, behavior='chase'):
+    def __init__(self, col, row, color, home_col, home_row, behavior="chase"):
         super().__init__(col, row, color, TILE_SIZE // 2 - 3)
         self.spawn = (col, row)
         self.home = (home_col, home_row)
-        self.mode = 'normal'
+        self.mode = "normal"
         self.behavior = behavior  # 'chase' or 'random'
         self.flash_timer = 0.0
 
     def set_vulnerable(self):
-        if self.mode != 'eyes':
-            self.mode = 'vulnerable'
+        if self.mode != "eyes":
+            self.mode = "vulnerable"
             self.flash_timer = 0.0
 
     def set_normal(self):
-        self.mode = 'normal'
+        self.mode = "normal"
 
     def set_eyes(self):
-        self.mode = 'eyes'
+        self.mode = "eyes"
 
     def speed(self):
-        if self.mode == 'vulnerable':
+        if self.mode == "vulnerable":
             return VULNERABLE_SPEED
         return GHOST_SPEED
 
     def update(self, dt, pacman):
         # If eyes, path back to home
-        if self.mode == 'eyes':
+        if self.mode == "eyes":
             target = self.home
             self._move_towards(dt, target)
             # If close to home, respawn to spawn and normal mode
@@ -256,7 +271,7 @@ class Ghost(Entity):
     def _choose_dir(self, options, pacman):
         if not options:
             return (0, 0)
-        if self.mode == 'vulnerable':
+        if self.mode == "vulnerable":
             # move away from Pacman: maximize distance
             best = None
             best_dist = -1
@@ -267,7 +282,7 @@ class Ghost(Entity):
                     best_dist = dist
                     best = d
             return best
-        if self.behavior == 'random':
+        if self.behavior == "random":
             return random.choice(options)
         # chase behavior: minimize distance to Pacman
         best = None
@@ -287,7 +302,7 @@ class Ghost(Entity):
         for d in [(1, 0), (-1, 0), (0, 1), (0, -1)]:
             nc, nr = self.col + d[0], self.row + d[1]
             # Eyes can pass through door 'H'
-            if is_inside_grid(nc, nr) and MAZE_LAYOUT[nr][nc] != '1':
+            if is_inside_grid(nc, nr) and MAZE_LAYOUT[nr][nc] != "1":
                 options.append(d)
         if options:
             best = None
@@ -313,16 +328,22 @@ class Ghost(Entity):
         self.col, self.row = self.grid_pos()
 
     def draw(self, surface, t):
-        if self.mode == 'vulnerable':
+        if self.mode == "vulnerable":
             # flash near end of power timer
             color = VULN_BLUE if int(t * 6) % 2 == 0 else WHITE
-            pygame.draw.circle(surface, color, (int(self.x), int(self.y)), self.radius)
-        elif self.mode == 'eyes':
-            pygame.draw.circle(surface, WHITE, (int(self.x), int(self.y)), self.radius)
-            pygame.draw.circle(surface, BLUE, (int(self.x) - 4, int(self.y) - 2), 3)
-            pygame.draw.circle(surface, BLUE, (int(self.x) + 4, int(self.y) - 2), 3)
+            pygame.draw.circle(
+                surface, color, (int(self.x), int(self.y)), self.radius)
+        elif self.mode == "eyes":
+            pygame.draw.circle(
+                surface, WHITE, (int(self.x), int(self.y)), self.radius)
+            pygame.draw.circle(
+                surface, BLUE, (int(self.x) - 4, int(self.y) - 2), 3)
+            pygame.draw.circle(
+                surface, BLUE, (int(self.x) + 4, int(self.y) - 2), 3)
         else:
-            pygame.draw.circle(surface, self.color, (int(self.x), int(self.y)), self.radius)
+            pygame.draw.circle(
+                surface, self.color, (int(self.x), int(self.y)), self.radius
+            )
 
 
 def try_change_dir(col, row, target_dir):
@@ -344,7 +365,7 @@ def hits_wall(rect):
     bottom = min(ROWS - 1, (rect.bottom - 1 - OFFSET_Y) // TILE_SIZE)
     for r in range(int(top), int(bottom) + 1):
         for c in range(int(left), int(right) + 1):
-            if MAZE_LAYOUT[r][c] == '1' or MAZE_LAYOUT[r][c] == 'H':
+            if MAZE_LAYOUT[r][c] == "1" or MAZE_LAYOUT[r][c] == "H":
                 if rect.colliderect(rect_for_cell(c, r)):
                     return True
     return False
@@ -358,7 +379,7 @@ def hits_wall_eyes(rect):
     bottom = min(ROWS - 1, (rect.bottom - 1 - OFFSET_Y) // TILE_SIZE)
     for r in range(int(top), int(bottom) + 1):
         for c in range(int(left), int(right) + 1):
-            if MAZE_LAYOUT[r][c] == '1':
+            if MAZE_LAYOUT[r][c] == "1":
                 if rect.colliderect(rect_for_cell(c, r)):
                     return True
     return False
@@ -370,9 +391,9 @@ def load_dots():
     for r in range(ROWS):
         for c in range(COLS):
             ch = MAZE_LAYOUT[r][c]
-            if ch == '2':
+            if ch == "2":
                 dots.add((c, r))
-            elif ch == '3':
+            elif ch == "3":
                 power.add((c, r))
     return dots, power
 
@@ -385,9 +406,9 @@ def draw_maze(surface):
         for c in range(COLS):
             cell = MAZE_LAYOUT[r][c]
             rect = rect_for_cell(c, r)
-            if cell == '1':
+            if cell == "1":
                 pygame.draw.rect(surface, BLUE, rect)
-            elif cell == 'H':
+            elif cell == "H":
                 pygame.draw.rect(surface, NAVY, rect)
     # Grid outline for aesthetics (optional)
     # for r in range(ROWS):
@@ -396,10 +417,10 @@ def draw_maze(surface):
 
 
 def draw_dots(surface, dots, power):
-    for (c, r) in dots:
+    for c, r in dots:
         x, y = grid_to_world(c, r)
         pygame.draw.circle(surface, WHITE, (x, y), max(2, TILE_SIZE // 8))
-    for (c, r) in power:
+    for c, r in power:
         x, y = grid_to_world(c, r)
         pygame.draw.circle(surface, WHITE, (x, y), max(5, TILE_SIZE // 3))
 
@@ -447,20 +468,23 @@ def create_ghosts():
     spawns = []
     for r in range(ROWS):
         for c in range(COLS):
-            if MAZE_LAYOUT[r][c] == 'H':
+            if MAZE_LAYOUT[r][c] == "H":
                 homes.append((c, r))
                 # spawn adjacent inside house if possible
-                spawns.append((c, r + 1 if r + 1 < ROWS and MAZE_LAYOUT[r + 1][c] != '1' else r))
+                spawns.append(
+                    (c, r + 1 if r + 1 <
+                     ROWS and MAZE_LAYOUT[r + 1][c] != "1" else r)
+                )
     if not homes:
         homes = [(COLS // 2, ROWS // 2)]
         spawns = [(COLS // 2, ROWS // 2 + 1)]
 
     # Select up to 4 ghosts
     ghost_defs = [
-        (RED, 'chase'),
-        (PINK, 'random'),
-        (CYAN, 'chase'),
-        (ORANGE, 'random'),
+        (RED, "chase"),
+        (PINK, "random"),
+        (CYAN, "chase"),
+        (ORANGE, "random"),
     ]
     ghosts = []
     for i, (color, beh) in enumerate(ghost_defs):
@@ -477,7 +501,10 @@ def draw_hud(surface, font, pacman, remaining):
     dots_surf = font.render(f"Dots left: {remaining}", True, WHITE)
     surface.blit(score_surf, (10, 10))
     surface.blit(lives_surf, (10, 10 + score_surf.get_height() + 4))
-    surface.blit(dots_surf, (10, 10 + score_surf.get_height() + lives_surf.get_height() + 8))
+    surface.blit(
+        dots_surf, (10, 10 + score_surf.get_height() +
+                    lives_surf.get_height() + 8)
+    )
 
 
 def main():
@@ -495,7 +522,7 @@ def main():
         c = COLS // 2 - dc
         if c < 1:
             break
-        if MAZE_LAYOUT[start_row][c] != '1':
+        if MAZE_LAYOUT[start_row][c] != "1":
             start_col = c
             break
     pacman = Pacman(start_col, start_row)
@@ -550,16 +577,16 @@ def main():
             # Toggle ghosts back to normal when power ends
             if pacman.power_timer == 0:
                 for g in ghosts:
-                    if g.mode == 'vulnerable':
+                    if g.mode == "vulnerable":
                         g.set_normal()
 
             # Collisions
             hits = check_collisions(pacman, ghosts)
             for g in hits:
-                if g.mode == 'vulnerable':
+                if g.mode == "vulnerable":
                     g.set_eyes()
                     pacman.score += GHOST_SCORE
-                elif g.mode == 'normal':
+                elif g.mode == "normal":
                     # lose life and reset positions
                     pacman.lives -= 1
                     if pacman.lives <= 0:
@@ -582,11 +609,26 @@ def main():
 
         # Messages
         if game_over:
-            msg = font.render("Game Over! Press R to Restart or ESC to Quit", True, WHITE)
-            screen.blit(msg, (SCREEN_WIDTH // 2 - msg.get_width() // 2, SCREEN_HEIGHT // 2 - msg.get_height() // 2))
+            msg = font.render(
+                "Game Over! Press R to Restart or ESC to Quit", True, WHITE
+            )
+            screen.blit(
+                msg,
+                (
+                    SCREEN_WIDTH // 2 - msg.get_width() // 2,
+                    SCREEN_HEIGHT // 2 - msg.get_height() // 2,
+                ),
+            )
         elif win:
-            msg = font.render("You Win! Press R to Restart or ESC to Quit", True, WHITE)
-            screen.blit(msg, (SCREEN_WIDTH // 2 - msg.get_width() // 2, SCREEN_HEIGHT // 2 - msg.get_height() // 2))
+            msg = font.render(
+                "You Win! Press R to Restart or ESC to Quit", True, WHITE)
+            screen.blit(
+                msg,
+                (
+                    SCREEN_WIDTH // 2 - msg.get_width() // 2,
+                    SCREEN_HEIGHT // 2 - msg.get_height() // 2,
+                ),
+            )
 
         pygame.display.flip()
 
@@ -594,5 +636,5 @@ def main():
     sys.exit()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
